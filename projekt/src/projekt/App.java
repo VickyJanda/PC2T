@@ -3,6 +3,7 @@ package projekt;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 import projekt.Kniha.Dostupnost;
 import projekt.Roman.Zanr;
@@ -43,12 +44,12 @@ public class App {
 	}
 
 	public static void KnihaPrint(Kniha mojeKniha) {
-		System.out.print("Název: " + mojeKniha.getJmeno() + ", autor: " + Arrays.toString(mojeKniha.getAutor())
-				+ ", dostupnost: " + mojeKniha.getDostupnost());
+		System.out.print("Název: " + mojeKniha.getJmeno() + ", Autor: " + Arrays.toString(mojeKniha.getAutor())
+				+ ", Rok vydání: " + mojeKniha.getRok_vydani() + ", Dostupnost: " + mojeKniha.getDostupnost());
 		if (mojeKniha instanceof Roman)
 			System.out.println(", Žánr: " + ((Roman) mojeKniha).getTyp_zanru());
 		else if (mojeKniha instanceof Ucebnice)
-			System.out.println(", Žánr: " + ((Ucebnice) mojeKniha).getTyp_rocniku());
+			System.out.println(", Ročník: " + ((Ucebnice) mojeKniha).getTyp_rocniku());
 		else
 			System.out.println();
 	}
@@ -56,7 +57,7 @@ public class App {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		String autors[] = { "Pepa", "David" };
+		String autors[] = { "Pepa Dvořák", "David Nováček" };
 
 		Dostupnost dostupnost;
 		dostupnost = Dostupnost.DOSTUPNÁ;
@@ -83,6 +84,7 @@ public class App {
 		int typ;
 		int rok;
 		String nazev;
+		String hledany_nazev;
 		int vyber_dostupnost;
 		int vyber_zanr;
 		int vyber_rocnik;
@@ -90,13 +92,16 @@ public class App {
 		int volba_edit;
 		int vyber_uprava;
 		String find_author;
+		Boolean kniha_found = false;
 		int pocet_knih = 4;
 		while (run) {
 			System.out.println("Vyberte pozadovanou cinnost:");
 			System.out.println("1 .. Vložení nové knihy");
 			System.out.println("2 .. Úprava informací o knize");
+			System.out.println("3 .. Smazání knihy z databáze");
 			System.out.println("5 .. Výpis databáze");
-			int volba = CislaDoN(sc, 3);
+			System.out.println("10 .. Ukončení aplikace");
+			int volba = CislaDoN(sc, 10);
 			switch (volba) {
 			case 1:
 				System.out.println("Vyberte typ knihy:\nZadejte '1' pro Román\nZadejte '2' pro Učebnici");
@@ -155,23 +160,20 @@ public class App {
 				}
 
 				break;
+
 			case 2:
-				for (int i = 0; i < pocet_knih; i++) {
-					KnihaPrint(mojeKniha[i]);
-				}
-			case 3:
 				System.out.println("Zadejte název knihy, kterou chcete upravit: ");
-				nazev = sc.next();
-				nazev += sc.nextLine();
-				Boolean kniha_found = false;
+				hledany_nazev = sc.next();
+				hledany_nazev += sc.nextLine();
 				for (int i = 0; i < pocet_knih; i++) {
-					if (mojeKniha[i].getJmeno() == nazev) {
+					nazev = mojeKniha[i].getJmeno();
+					if (nazev.equals(hledany_nazev)) {
 						System.out.println("Kniha nalezena:");
 						kniha_found = true;
 						KnihaPrint(mojeKniha[i]);
 						while (true) {
 							System.out.println(
-									"Jakou informaci chcete změnit?:\nZadejte '1' pro autora\\nZadejte '2' pro rok vydání\nZadejte '3' pro stav dostupnosti\nZadejte '4' pro ukončení úprav");
+									"Jakou informaci chcete změnit?\nZadejte '1' pro autora\nZadejte '2' pro rok vydání\nZadejte '3' pro stav dostupnosti\nZadejte '4' pro ukončení úprav");
 							volba_edit = CislaDoN(sc, 4);
 							if (volba_edit == 1) {
 								if (mojeKniha[i].getAutor().length > 1) {
@@ -185,7 +187,7 @@ public class App {
 										String[] autori = mojeKniha[i].getAutor();
 										Boolean found = false;
 										for (int j = 0; j < autori.length; j++) {
-											if (autori[j] == find_author) {
+											if (autori[j].equals(find_author)) {
 												System.out.println("Autor nalezen");
 												System.out.println("Zadejte nové jméno autora");
 												autori[j] = sc.next();
@@ -194,23 +196,23 @@ public class App {
 												System.out.println("Autor změněn");
 												found = true;
 											}
-											if (!found)
-												System.out.println("Autor NENALEZEN!");
 										}
+										if (!found)
+											System.out.println("Autor NENALEZEN!");
 									} else {
 										System.out.println("Zadejte počet autorů: ");
 										pocet_autoru = Cisla(sc);
 										autor = new String[pocet_autoru];
 										for (int j = 0; j < pocet_autoru; j++) {
 											System.out.println("Zadejte jméno autora: ");
-											autor[i] = sc.next();
-											autor[i] += sc.nextLine();
+											autor[j] = sc.next();
+											autor[j] += sc.nextLine();
 										}
 										mojeKniha[i].setAutor(autor);
 										System.out.println("Autoři změněni");
 									}
 								} else {
-									System.out.println("Zadejte jméno autora: ");
+									System.out.println("Zadejte nové jméno autora: ");
 									String[] new_autor = new String[1];
 									new_autor[0] = sc.next();
 									new_autor[0] += sc.nextLine();
@@ -227,7 +229,7 @@ public class App {
 								System.out.println(
 										"Zadejte novou dostupnost knihy:\nZadejte '1' pro Dostupná\nZadejte '2' pro Nedostupná");
 								vyber_dostupnost = CislaDoN(sc, 2);
-								if (vyber_dostupnost == 3)
+								if (vyber_dostupnost == 1)
 									dostupnost = Dostupnost.DOSTUPNÁ;
 								else
 									dostupnost = Dostupnost.NEDOSTUPNÁ;
@@ -242,8 +244,48 @@ public class App {
 				}
 				if (!kniha_found)
 					System.out.println("Kniha NENALEZENA");
+				break;
+			case 3:
+				System.out.println("Zadejte název knihy, kterou chcete smazat: ");
+				hledany_nazev = sc.next();
+				hledany_nazev += sc.nextLine();
+				for (int i = 0; i < pocet_knih; i++) {
+					nazev = mojeKniha[i].getJmeno();
+					if (nazev.equals(hledany_nazev)) {
+						System.out.println("Kniha nalezena:");
+						kniha_found = true;
+						KnihaPrint(mojeKniha[i]);
+						System.out.println(
+								"Jste si jistí že chcete knihu smazat?\nZadejte '1' pro smazání\nZadejte '2' pro zrušení akce");
+						volba_edit = CislaDoN(sc, 2);
+						if (volba_edit == 1) {
+							for (int j = 0; j < pocet_knih; j++) {
+								if(j>i) {
+									mojeKniha[j-1] = mojeKniha[j];
+								}
+								else if(j==i)
+									continue;
+							}
+							pocet_knih--;
+							System.out.println("Kniha smazána:");
+						}
+					} 
+				}
+				if(!kniha_found)
+					System.out.println("Kniha NENALEZENA:");
+				break;
+			case 5:
+				for (int i = 0; i < pocet_knih; i++) {
+					KnihaPrint(mojeKniha[i]);
+				}
+				break;
+			case 10:
+				run = false;
+				System.out.println("Exiting...");
+				break;
 
 			}
+
 		}
 
 	}
