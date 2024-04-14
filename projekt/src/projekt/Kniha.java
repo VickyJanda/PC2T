@@ -41,4 +41,8 @@ public Dostupnost getDostupnost() {
 	return typ_dostupnosti;
 }
 
+public void setDostupnost(Dostupnost typ_dostupnosti) {
+	this.typ_dostupnosti = typ_dostupnosti;
+}
+
 }
