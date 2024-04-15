@@ -1,6 +1,8 @@
 package projekt;
 
-public class Kniha {
+import java.util.Comparator;
+
+public class Kniha{
 String jmeno;
 String autor[];
 int rok_vydani;
@@ -8,6 +10,15 @@ public enum Dostupnost {
 	  DOSTUPNÁ,
 	  NEDOSTUPNÁ;
 
+}
+
+public static Comparator<Kniha> razeni_Jmeno() {
+    return Comparator.comparing((Kniha k) -> k.jmeno, String.CASE_INSENSITIVE_ORDER);
+}
+
+
+public static Comparator<Kniha> razeni_Rok() {
+    return Comparator.comparingInt(k -> k.rok_vydani);
 }
 
 public Dostupnost typ_dostupnosti;
