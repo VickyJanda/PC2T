@@ -1,16 +1,26 @@
 package projekt;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.stream.IntStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import projekt.Kniha.Dostupnost;
 import projekt.Roman.Zanr;
 import projekt.Ucebnice.Rocnik;
+import projekt.Connect;
 
 public class App {
 
@@ -75,13 +85,7 @@ public class App {
 	}
 
 	public static void main(String[] args) throws IOException {
-		// TODO Auto-generated method stub
-
-		String autors[] = { "Pepa Dvořák", "David Nováček" };
-		String autors2[] = { "Pepa Dvořák", "David Marx" };
-		String autors3[] = { "Jirka Kopyto", "David Nováček" };
-		String autors4[] = { "Pepa Dvořák", "Jirka Kopyto" };
-
+		
 		Dostupnost dostupnost;
 		dostupnost = Dostupnost.DOSTUPNÁ;
 
@@ -90,19 +94,36 @@ public class App {
 
 		Rocnik rocnik;
 		rocnik = Rocnik.STUPEŇ2;
-
-		Kniha[] mojeKniha = new Kniha[4];
 		Kniha[] pujcene_knihy = new Kniha[0];
-		mojeKniha[0] = new Roman("Rohlik", autors, 2003, dostupnost, zanr);
-		mojeKniha[1] = new Ucebnice("Kleste", autors2, 2023, dostupnost, rocnik);
-		// dostupnost = Dostupnost.NEDOSTUPNÁ;
-		mojeKniha[2] = new Roman("Chleba", autors3, 2008, dostupnost, zanr);
-		zanr = Zanr.HOROR;
-		mojeKniha[3] = new Roman("Jablko", autors4, 2019, dostupnost, zanr);
-
-		for (int i = 0; i < 4; i++) {
-			KnihaPrint(mojeKniha[i]);
+		Kniha[] mojeKniha = new Kniha[0];
+		
+		
+		
+		Connect con=new Connect();
+		con.connect();
+		con.createTable();
+		
+		ResultSet rs  = con.selectAllresult();
+		 try {
+			while (rs.next()) {
+				if(rs.getString("typ").equalsIgnoreCase("FANTASY") || rs.getString("typ").equalsIgnoreCase("DETEKTIVNÍ")|| rs.getString("typ").equalsIgnoreCase("DOBRODRUŽNÝ") ||rs.getString("typ").equalsIgnoreCase("PSYCHOLOGICKÝ") ||rs.getString("typ").equalsIgnoreCase("HOROR"))
+				{
+					mojeKniha = increase_size(mojeKniha);
+					String [] autors = rs.getString("autor").split(",");
+					mojeKniha[mojeKniha.length - 1] = new Roman(rs.getString("nazev"),autors, rs.getInt("rok"), Dostupnost.valueOf(rs.getString("dostupnost")), Zanr.valueOf(rs.getString("typ")));
+					
+				}
+				else if(rs.getString("typ").equalsIgnoreCase("STUPEŇ1") ||rs.getString("typ").equalsIgnoreCase("STUPEŇ2") || rs.getString("typ").equalsIgnoreCase("SŠ") || rs.getString("typ").equalsIgnoreCase("VŠ"))
+				{
+					mojeKniha = increase_size(mojeKniha);
+					String [] autors = rs.getString("autor").split(",");
+					mojeKniha[mojeKniha.length - 1] = new Ucebnice(rs.getString("nazev"),autors, rs.getInt("rok"), Dostupnost.valueOf(rs.getString("dostupnost")), Rocnik.valueOf(rs.getString("typ")));
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
+	
 
 		Scanner sc = new Scanner(System.in);
 
@@ -131,7 +152,8 @@ public class App {
 			System.out.println("8 .. Výpis knih z hledaného žánru");
 			System.out.println("9 .. Výpis všech vypůjčených knih");
 			System.out.println("10 .. Výpis informací o knize do souboru");
-			System.out.println("15 .. Ukončení aplikace");
+			System.out.println("11 .. Načtení informací o knize ze souboru");
+			System.out.println("12 .. Ukončení aplikace a ulozeni do databaze");
 			int volba = CislaDoN(sc, 15);
 			switch (volba) {
 			case 1:
@@ -274,7 +296,7 @@ public class App {
 
 				}
 				if (!kniha_found)
-					System.out.println("Kniha NENALEZENA");
+					System.out.println("Kniha NENALEZENA.");
 				break;
 			case 3:
 				System.out.println("Zadejte název knihy, kterou chcete smazat: ");
@@ -296,7 +318,7 @@ public class App {
 					}
 				}
 				if (!kniha_found)
-					System.out.println("Kniha NENALEZENA:");
+					System.out.println("Kniha NENALEZENA.");
 				kniha_found = false;
 				break;
 			case 4:
@@ -342,7 +364,7 @@ public class App {
 					}
 				}
 				if (!kniha_found)
-					System.out.println("Kniha NENALEZENA:");
+					System.out.println("Kniha NENALEZENA.");
 				kniha_found = false;
 				break;
 
@@ -365,7 +387,7 @@ public class App {
 					}
 				}
 				if (!kniha_found)
-					System.out.println("Kniha NENALEZENA:");
+					System.out.println("Kniha NENALEZENA.");
 				kniha_found = false;
 				break;
 			case 7:
@@ -387,7 +409,7 @@ public class App {
 					}
 				}
 				if (!kniha_found)
-					System.out.println("Kniha NENALEZENA:");
+					System.out.println("Kniha NENALEZENA.");
 				kniha_found = false;
 
 				Arrays.sort(pom_kniha, Kniha.razeni_Rok());
@@ -479,15 +501,24 @@ public class App {
 							filename = sc.next();
 							fw = new FileWriter(filename);
 							try {
-								fw.write("Název: " + mojeKniha[i].getJmeno() + ", Autor: "
-										+ Arrays.toString(mojeKniha[i].getAutor()) + ", Rok vydání: "
-										+ mojeKniha[i].getRok_vydani() + ", Dostupnost: "
+								fw.write("Název:" + mojeKniha[i].getJmeno());
+								fw.write("; Autor:");
+								for(int j=0;j<mojeKniha[i].autor.length;j++)
+								{
+									fw.write(mojeKniha[i].autor[j]);
+									if(j!=mojeKniha[i].autor.length-1)
+									{
+										fw.write(",");
+									}
+								}
+								fw.write( "; Rok vydání:"
+										+ mojeKniha[i].getRok_vydani() + "; Dostupnost:"
 										+ mojeKniha[i].getDostupnost());
 
 								if (mojeKniha[i] instanceof Roman)
-									fw.write(", Žánr: " + ((Roman) mojeKniha[i]).getTyp_zanru());
+									fw.write("; Žánr:" + ((Roman) mojeKniha[i]).getTyp_zanru());
 								else if (mojeKniha[i] instanceof Ucebnice)
-									fw.write(", Ročník: " + ((Ucebnice) mojeKniha[i]).getTyp_rocniku());
+									fw.write("; Ročník:" + ((Ucebnice) mojeKniha[i]).getTyp_rocniku());
 
 							} catch (IOException e) {
 
@@ -502,10 +533,87 @@ public class App {
 				kniha_found = false;
 
 				break;
-
-			case 15:
+			case 11:
+				FileReader fr;
+				BufferedReader br;
+				
+				System.out.println("Zadejte jméno souboru: ");
+				hledany_nazev = sc.next();
+				hledany_nazev += sc.nextLine();
+				
+				 try {
+				fr = new FileReader(hledany_nazev);
+				br = new BufferedReader(fr);
+				 } catch (FileNotFoundException ex) {
+					 System.out.println( ex);
+					 break;
+				    }
+				String line = br.readLine();
+				String[] words = line.split(";");
+				String[] fInput = new String[5];
+				String[] Authors= new String[5];
+				
+				for(int i=0;i<words.length;i++)
+				{
+					String[] input = words[i].split(":");
+					if(i==1)
+					{
+						String[] inputs = input[i].split(",");
+						Authors = new String[inputs.length];
+						for(int j=0;j<inputs.length;j++)
+						{
+							Authors[j]=inputs[j];
+						}
+					}
+					else
+					{
+						
+						fInput[i]= input[1];
+					}
+				
+					
+					
+				}
+				if(fInput[4].equalsIgnoreCase("FANTASY") || fInput[4].equalsIgnoreCase("DETEKTIVNÍ")|| fInput[4].equalsIgnoreCase("DOBRODRUŽNÝ") || fInput[4].equalsIgnoreCase("PSYCHOLOGICKÝ") || fInput[4].equalsIgnoreCase("HOROR"))
+				{
+					mojeKniha = increase_size(mojeKniha);
+					mojeKniha[mojeKniha.length - 1] = new Roman(fInput[0],Authors, Integer.valueOf(fInput[2]), Dostupnost.valueOf(fInput[3]), Zanr.valueOf(fInput[4]));
+					
+				}
+				else if(fInput[4].equalsIgnoreCase("STUPEŇ1") || fInput[4].equalsIgnoreCase("STUPEŇ2") || fInput[4].equalsIgnoreCase("SŠ") || fInput[4].equalsIgnoreCase("VŠ"))
+				{
+					mojeKniha = increase_size(mojeKniha);
+					mojeKniha[mojeKniha.length - 1] = new Ucebnice(fInput[0],Authors, Integer.valueOf(fInput[2]), Dostupnost.valueOf(fInput[3]), Rocnik.valueOf(fInput[4]));
+				}
+				else
+				{
+					System.out.println("Neplatný soubor."+fInput[4]+'.');
+				}
+			
+				br.close();
+				fr.close();
+				break;
+			case 12:
 				run = false;
-				System.out.println("Ukončuji aplikaci...");
+				String typKnihy=null;
+				
+				System.out.println("Ukončuji aplikaci a zapisuji do databaze...");
+				con.deleteTable();
+				con.createTable();
+				for (int i = 0; i < mojeKniha.length; i++) {
+					String Author=mojeKniha[i].autor[0];
+					if (mojeKniha[i] instanceof Roman)
+						typKnihy = String.valueOf(((Roman) mojeKniha[i]).getTyp_zanru());
+					else if (mojeKniha[i] instanceof Ucebnice)
+						typKnihy = String.valueOf(((Ucebnice) mojeKniha[i]).getTyp_rocniku());
+					for (int j = 1; j < mojeKniha[i].autor.length; j++) {
+						Author=Author +","+ mojeKniha[i].autor[j];
+					}
+					con.insertRecord(mojeKniha[i].getJmeno(),Author, mojeKniha[i].getRok_vydani(), String.valueOf( mojeKniha[i].getDostupnost()), typKnihy);
+				}
+				
+				
+				con.disconnect();
 				break;
 
 			}
